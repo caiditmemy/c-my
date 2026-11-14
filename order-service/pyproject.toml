@@ -1,0 +1,26 @@
+[project]
+name = "order-service"
+version = "0.1.0"
+description = "Dịch vụ quản lý đơn hàng (SOA, cổng 8092, CSDL order_db)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.128.8",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+    "alembic>=1.16",
+    "pydantic-settings>=2.6",
+    "httpx>=0.28",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

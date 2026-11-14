@@ -1,0 +1,75 @@
+name: nambede-th4
+
+# Mini SOA: hai service độc lập, mỗi service một cổng và một database riêng (cùng một máy chủ Postgres cho gọn).
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: nambede
+      POSTGRES_PASSWORD: nambede
+    ports:
+      - "127.0.0.1:55440:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Tạo product_db và order_db lần đầu khởi tạo volume
+      - ./docker/postgres/01-create-databases.sql:/docker-entrypoint-initdb.d/01-create-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nambede -d product_db && pg_isready -U nambede -d order_db"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  product-service:
+    build: ./product-service
+    environment:
+      DATABASE_URL: postgresql+psycopg://nambede:nambede@postgres:5432/product_db
+    ports:
+      - "127.0.0.1:8091:8091"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8091/health').status == 200 else 1)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  order-service:
+    build: ./order-service
+    environment:
+      DATABASE_URL: postgresql+psycopg://nambede:nambede@postgres:5432/order_db
+      # Gọi nhau qua tên service trong mạng Docker
+      PRODUCT_SERVICE_URL: http://product-service:8091
+      # Địa chỉ mà trình duyệt dùng để gọi product-service (giao diện web)
+      PUBLIC_PRODUCT_SERVICE_URL: http://localhost:8091
+    ports:
+      - "127.0.0.1:8092:8092"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8092/health').status == 200 else 1)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  # Chạy một lần, không nằm trong `up` (để --wait không coi container đã thoát là lỗi):
+  #   docker compose run --rm seed
+  seed:
+    profiles: ["seed"]
+    image: python:3.12-alpine
+    working_dir: /scripts
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["python", "seed.py", "--product-url", "http://product-service:8091"]
+    depends_on:
+      product-service:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  pgdata:

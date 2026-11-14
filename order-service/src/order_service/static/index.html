@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản lý đơn hàng</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>Quản lý đơn hàng <small>mini SOA: order-service :8092 → product-service :8091</small></h1>
+  <nav>
+    <button data-tab="orders" class="active">Đơn hàng</button>
+    <button data-tab="new">Tạo đơn</button>
+    <button data-tab="products">Sản phẩm</button>
+    <a href="/docs" target="_blank">API order</a>
+    <a id="docs-product" href="#" target="_blank">API product</a>
+  </nav>
+</header>
+<div id="toast" hidden></div>
+
+<main>
+  <!-- ĐƠN HÀNG -->
+  <section id="tab-orders">
+    <div class="bar">
+      <label>Trạng thái
+        <select id="filter-status">
+          <option value="">Tất cả</option>
+          <option value="PENDING">Chờ xác nhận</option>
+          <option value="CONFIRMED">Đã xác nhận</option>
+          <option value="SHIPPING">Đang giao</option>
+          <option value="DELIVERED">Đã giao</option>
+          <option value="CANCELLED">Đã hủy</option>
+        </select>
+      </label>
+      <button id="reload-orders" class="ghost">Tải lại</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Khách hàng</th><th>Sản phẩm</th><th class="num">Tổng tiền</th><th>Trạng thái</th><th>Tạo lúc</th><th>Thao tác</th></tr></thead>
+      <tbody id="orders-body"></tbody>
+    </table>
+    <div class="pager"><button id="orders-prev" class="ghost">‹ Trước</button><span id="orders-page"></span><button id="orders-next" class="ghost">Sau ›</button></div>
+  </section>
+
+  <!-- TẠO ĐƠN -->
+  <section id="tab-new" hidden>
+    <form id="order-form" class="card">
+      <h2>Thông tin khách hàng</h2>
+      <div class="grid">
+        <label>Tên khách hàng *<input name="customer_name" required maxlength="255"></label>
+        <label>Số điện thoại *<input name="customer_phone" required minlength="6" maxlength="32"></label>
+        <label class="wide">Địa chỉ giao hàng<input name="address" maxlength="500"></label>
+        <label class="wide">Ghi chú<input name="note" maxlength="2000"></label>
+      </div>
+      <h2>Chọn sản phẩm</h2>
+      <table>
+        <thead><tr><th>Sản phẩm</th><th class="num">Đơn giá</th><th class="num">Còn</th><th class="num">Số lượng</th><th class="num">Thành tiền</th></tr></thead>
+        <tbody id="pick-body"></tbody>
+      </table>
+      <p class="total">Tổng cộng: <b id="pick-total">0 ₫</b></p>
+      <div id="stock-preview" class="notice" hidden></div>
+      <div class="actions">
+        <button type="button" id="btn-check" class="ghost">Kiểm tra tồn kho</button>
+        <button type="submit">Tạo đơn hàng</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- SẢN PHẨM -->
+  <section id="tab-products" hidden>
+    <div class="bar">
+      <input id="product-q" placeholder="Tìm theo tên hoặc mã…">
+      <button id="btn-new-product">+ Thêm sản phẩm</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Mã</th><th>Tên</th><th class="num">Giá</th><th class="num">Tồn kho</th><th>Thao tác</th></tr></thead>
+      <tbody id="products-body"></tbody>
+    </table>
+    <div class="pager"><button id="products-prev" class="ghost">‹ Trước</button><span id="products-page"></span><button id="products-next" class="ghost">Sau ›</button></div>
+  </section>
+</main>
+
+<dialog id="product-dialog">
+  <form id="product-form" method="dialog">
+    <h2 id="product-title">Sản phẩm</h2>
+    <input type="hidden" name="id">
+    <label>Mã sản phẩm (SKU) *<input name="sku" required maxlength="64"></label>
+    <label>Tên *<input name="name" required maxlength="255"></label>
+    <label>Mô tả<textarea name="description" rows="2"></textarea></label>
+    <div class="grid">
+      <label>Giá (₫) *<input name="price" type="number" min="0" step="0.01" required></label>
+      <label>Tồn kho *<input name="quantity" type="number" min="0" step="1" required value="0"></label>
+    </div>
+    <div class="actions"><button type="button" class="ghost" id="product-cancel">Hủy</button><button type="submit">Lưu</button></div>
+  </form>
+</dialog>
+
+<dialog id="order-dialog">
+  <form id="order-edit-form" method="dialog">
+    <h2 id="order-edit-title">Sửa thông tin đơn</h2>
+    <input type="hidden" name="id">
+    <label>Tên khách hàng *<input name="customer_name" required maxlength="255"></label>
+    <label>Số điện thoại *<input name="customer_phone" required minlength="6" maxlength="32"></label>
+    <label>Địa chỉ<input name="address" maxlength="500"></label>
+    <label>Ghi chú<input name="note" maxlength="2000"></label>
+    <div class="actions"><button type="button" class="ghost" id="order-cancel">Đóng</button><button type="submit">Lưu</button></div>
+  </form>
+</dialog>
+
+<script src="/config.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
